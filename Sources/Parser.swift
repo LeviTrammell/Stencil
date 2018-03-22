@@ -40,7 +40,8 @@ public class TokenParser {
       case .text(let text):
         nodes.append(TextNode(text: text))
       case .variable:
-        nodes.append(VariableNode(variable: try compileFilter(token.contents)))
+        let filter = try FilterExpression(token: token.contents, environment: environment)
+        nodes.append(VariableNode(variable: filter))
       case .block:
         if let parse_until = parse_until , parse_until(self, token) {
           prependToken(token)
@@ -48,7 +49,7 @@ public class TokenParser {
         }
 
         if let tag = token.components().first {
-          let parser = try findTag(name: tag)
+          let parser = try environment.findTag(name: tag)
           nodes.append(try parser(self, token))
         }
       case .comment:
@@ -71,8 +72,20 @@ public class TokenParser {
     tokens.insert(token, at: 0)
   }
 
+  public func compileFilter(_ token: String) throws -> Resolvable {
+    return try FilterExpression(token: token, environment: environment)
+  }
+
+  public func compileExpression(components: [String]) throws -> Expression {
+    return try IfExpressionParser(components: components, environment: environment).parse()
+  }
+
+}
+
+extension Environment {
+
   func findTag(name: String) throws -> Extension.TagParser {
-    for ext in environment.extensions {
+    for ext in extensions {
       if let filter = ext.tags[name] {
         return filter
       }
@@ -82,7 +95,7 @@ public class TokenParser {
   }
 
   func findFilter(_ name: String) throws -> FilterType {
-    for ext in environment.extensions {
+    for ext in extensions {
       if let filter = ext.filters[name] {
         return filter
       }
@@ -97,7 +110,7 @@ public class TokenParser {
   }
 
   private func suggestedFilters(for name: String) -> [String] {
-    let allFilters = environment.extensions.flatMap({ $0.filters.keys })
+    let allFilters = extensions.flatMap({ $0.filters.keys })
 
     let filtersWithDistance = allFilters
                 .map({ (filterName: $0, distance: $0.levenshteinDistance(name)) })
@@ -108,10 +121,6 @@ public class TokenParser {
     }
     // suggest all filters with the same distance
     return filtersWithDistance.filter({ $0.distance == minDistance }).map({ $0.filterName })
-  }
-
-  public func compileFilter(_ token: String) throws -> Resolvable {
-    return try FilterExpression(token: token, parser: self)
   }
 
 }

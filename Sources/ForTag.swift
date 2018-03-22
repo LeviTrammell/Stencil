@@ -38,7 +38,7 @@ class ForNode : NodeType {
     let filter = try parser.compileFilter(variable)
     let `where`: Expression?
     if components.count >= 6 {
-      `where` = try parseExpression(components: Array(components.suffix(from: 5)), tokenParser: parser)
+      `where` = try parser.compileExpression(components: Array(components.suffix(from: 5)))
     } else {
       `where` = nil
     }
