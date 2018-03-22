@@ -13,6 +13,7 @@
 - Added `indent` filter
 - Allow using new lines inside tags
 - Added support for iterating arrays of tuples
+- Added support for dynamic filter using `filter` filter
 
 ### Bug Fixes
 
